@@ -19,62 +19,62 @@ from . import wos
 import datetime
 from typing import Optional
 from .wos import (
-    WOSAPIOperation,
     WOSDataFieldCollection,
     WOSNodeState,
     WOSNodePolicy,
-    WOSServiceDefinition,
-    WOSDataTypeEnumDefinition,
-    WOSStartNodeRequest,
-    WOSServiceList,
-    WOSPackageRegistration,
-    WOSPackageDefinition,
-    WOSNodeInfo,
-    WOSAPIFeedback,
-    WOSTopicDefinition,
-    WOSServiceInfo,
-    WOSAPIMessage,
-    WOSActionDefinition,
+    WOSAPIOperation,
     WOSNodeInfoList,
+    WOSDataTypeEnumValue,
     WOSSetting,
+    WOSPackageDefinition,
     WOSDescription,
-    WOSDataTypeDefinition,
+    WOSNodeDefinition,
+    WOSAPIFeedback,
     WOSRequestDefinition,
+    WOSServiceList,
+    WOSDataTypeDefinition,
+    WOSPackageRegistration,
     WOSHeartbeat,
-    WOSDiagnoseInfo,
     WOSPackageInfo,
+    WOSStartNodeRequest,
+    WOSTopicDefinition,
+    WOSDataTypeEnumDefinition,
+    WOSDiagnoseInfo,
+    WOSAPIMessage,
+    WOSServiceDefinition,
+    WOSNodeInfo,
+    WOSActionDefinition,
+    WOSServiceInfo,
     WOSDataFieldDefinition,
     WOSPackageSetting,
-    WOSNodeDefinition,
-    WOSDataTypeEnumValue,
 )
 from .wosdummy import (
-    UserStatus,
     PostVisibility,
-    LikePostResponse,
-    AuthenticateRequest,
+    UserStatus,
+    ListUsersRequest,
+    User,
+    UpdateUserRequest,
     AuthenticateResponse,
     DeletePostRequest,
-    ListPostsRequest,
-    User,
-    GetUserRequest,
+    AuthenticateRequest,
+    UnlikePostRequest,
     ListUsersResponse,
+    Post,
+    Comment,
+    ListPostsRequest,
+    AddCommentRequest,
+    GetUserRequest,
+    ListCommentsRequest,
+    GetPostRequest,
     ListCommentsResponse,
     CreateUserRequest,
     ListPostsResponse,
-    UpdateUserRequest,
-    ListUserPostsRequest,
-    GetPostRequest,
-    UpdatePostRequest,
-    UnlikePostRequest,
     DeleteUserRequest,
-    Comment,
-    Post,
+    ListUserPostsRequest,
+    LikePostResponse,
     LikePostRequest,
-    ListUsersRequest,
     CreatePostRequest,
-    AddCommentRequest,
-    ListCommentsRequest,
+    UpdatePostRequest,
 )
 
 
@@ -266,52 +266,6 @@ class PostService:
         """
         self._client = client
 
-    def publish_comment_updates(self, payload: Comment):
-        """
-        Stream of comment updates
-
-        Args:
-                payload: The message payload
-
-        """
-        serialized = payload.SerializeToString()
-        self._client.publish("@wos/dummy/post", "comment_updates", serialized)
-
-    def subscribe_comment_updates(self, callback: Callable[[Comment], None]) -> str:
-        """
-        Stream of comment updates
-
-        Args:
-                callback: Function to call when a message is received
-
-        Returns:
-                Subscription key that can be used to unsubscribe
-
-        """
-
-        # Create wrapped callback for type conversion
-        def wrapped_callback(msg: WOSAPIMessage):
-            # Convert bytes to the expected type
-            if msg.payload is not None:
-                payload = Comment().parse(msg.payload)
-            else:
-                payload = None
-            callback(payload)
-
-        return self._client.subscribe(
-            "@wos/dummy/post", "comment_updates", wrapped_callback
-        )
-
-    def unsubscribe_comment_updates(self, subscription_key: str):
-        """
-        Stream of comment updates
-
-        Args:
-                subscription_key: The key returned from the subscribe method
-
-        """
-        self._client.unsubscribe(subscription_key)
-
     def publish_post_updates(self, payload: Post):
         """
         Stream of post updates
@@ -358,87 +312,51 @@ class PostService:
         """
         self._client.unsubscribe(subscription_key)
 
-    def request_update_post(
-        self, payload: UpdatePostRequest, timeout: float = None
-    ) -> Post:
+    def publish_comment_updates(self, payload: Comment):
         """
-        Update a post
+        Stream of comment updates
 
         Args:
                 payload: The message payload
-                timeout: Optional timeout in seconds
-
-        Returns:
-                The result from the server
-
-        Raises:
-                WOSAPIError: If the server returns an error
-                TimeoutError: If the operation times out
 
         """
         serialized = payload.SerializeToString()
-        result = self._client.request(
-            "@wos/dummy/post", "update_post", serialized, "", timeout
-        )
+        self._client.publish("@wos/dummy/post", "comment_updates", serialized)
 
-        # Convert result to expected type
-        if result is not None:
-            return Post().parse(result)
-        return None
-
-    def request_create_post(
-        self, payload: CreatePostRequest, timeout: float = None
-    ) -> Post:
+    def subscribe_comment_updates(self, callback: Callable[[Comment], None]) -> str:
         """
-        Create a new post
+        Stream of comment updates
 
         Args:
-                payload: The message payload
-                timeout: Optional timeout in seconds
+                callback: Function to call when a message is received
 
         Returns:
-                The result from the server
-
-        Raises:
-                WOSAPIError: If the server returns an error
-                TimeoutError: If the operation times out
+                Subscription key that can be used to unsubscribe
 
         """
-        serialized = payload.SerializeToString()
-        result = self._client.request(
-            "@wos/dummy/post", "create_post", serialized, "", timeout
+
+        # Create wrapped callback for type conversion
+        def wrapped_callback(msg: WOSAPIMessage):
+            # Convert bytes to the expected type
+            if msg.payload is not None:
+                payload = Comment().parse(msg.payload)
+            else:
+                payload = None
+            callback(payload)
+
+        return self._client.subscribe(
+            "@wos/dummy/post", "comment_updates", wrapped_callback
         )
 
-        # Convert result to expected type
-        if result is not None:
-            return Post().parse(result)
-        return None
-
-    def request_get_post(self, payload: GetPostRequest, timeout: float = None) -> Post:
+    def unsubscribe_comment_updates(self, subscription_key: str):
         """
-        Get a post by ID
+        Stream of comment updates
 
         Args:
-                payload: The message payload
-                timeout: Optional timeout in seconds
-
-        Returns:
-                The result from the server
-
-        Raises:
-                WOSAPIError: If the server returns an error
-                TimeoutError: If the operation times out
+                subscription_key: The key returned from the subscribe method
 
         """
-        serialized = payload.SerializeToString()
-        result = self._client.request(
-            "@wos/dummy/post", "get_post", serialized, "", timeout
-        )
-
-        # Convert result to expected type
-        if result is not None:
-            return Post().parse(result)
-        return None
+        self._client.unsubscribe(subscription_key)
 
     def request_list_comments(
         self, payload: ListCommentsRequest, timeout: float = None
@@ -522,6 +440,88 @@ class PostService:
         # Convert result to expected type
         if result is not None:
             return ListPostsResponse().parse(result)
+        return None
+
+    def request_update_post(
+        self, payload: UpdatePostRequest, timeout: float = None
+    ) -> Post:
+        """
+        Update a post
+
+        Args:
+                payload: The message payload
+                timeout: Optional timeout in seconds
+
+        Returns:
+                The result from the server
+
+        Raises:
+                WOSAPIError: If the server returns an error
+                TimeoutError: If the operation times out
+
+        """
+        serialized = payload.SerializeToString()
+        result = self._client.request(
+            "@wos/dummy/post", "update_post", serialized, "", timeout
+        )
+
+        # Convert result to expected type
+        if result is not None:
+            return Post().parse(result)
+        return None
+
+    def request_create_post(
+        self, payload: CreatePostRequest, timeout: float = None
+    ) -> Post:
+        """
+        Create a new post
+
+        Args:
+                payload: The message payload
+                timeout: Optional timeout in seconds
+
+        Returns:
+                The result from the server
+
+        Raises:
+                WOSAPIError: If the server returns an error
+                TimeoutError: If the operation times out
+
+        """
+        serialized = payload.SerializeToString()
+        result = self._client.request(
+            "@wos/dummy/post", "create_post", serialized, "", timeout
+        )
+
+        # Convert result to expected type
+        if result is not None:
+            return Post().parse(result)
+        return None
+
+    def request_get_post(self, payload: GetPostRequest, timeout: float = None) -> Post:
+        """
+        Get a post by ID
+
+        Args:
+                payload: The message payload
+                timeout: Optional timeout in seconds
+
+        Returns:
+                The result from the server
+
+        Raises:
+                WOSAPIError: If the server returns an error
+                TimeoutError: If the operation times out
+
+        """
+        serialized = payload.SerializeToString()
+        result = self._client.request(
+            "@wos/dummy/post", "get_post", serialized, "", timeout
+        )
+
+        # Convert result to expected type
+        if result is not None:
+            return Post().parse(result)
         return None
 
     def action_add_comment(
@@ -759,6 +759,34 @@ class UserService:
         """
         self._client.unsubscribe(subscription_key)
 
+    def request_update_user(
+        self, payload: UpdateUserRequest, timeout: float = None
+    ) -> User:
+        """
+        Update a user
+
+        Args:
+                payload: The message payload
+                timeout: Optional timeout in seconds
+
+        Returns:
+                The result from the server
+
+        Raises:
+                WOSAPIError: If the server returns an error
+                TimeoutError: If the operation times out
+
+        """
+        serialized = payload.SerializeToString()
+        result = self._client.request(
+            "@wos/dummy/user", "update_user", serialized, "", timeout
+        )
+
+        # Convert result to expected type
+        if result is not None:
+            return User().parse(result)
+        return None
+
     def request_create_user(
         self, payload: CreateUserRequest, timeout: float = None
     ) -> User:
@@ -839,34 +867,6 @@ class UserService:
         # Convert result to expected type
         if result is not None:
             return ListUsersResponse().parse(result)
-        return None
-
-    def request_update_user(
-        self, payload: UpdateUserRequest, timeout: float = None
-    ) -> User:
-        """
-        Update a user
-
-        Args:
-                payload: The message payload
-                timeout: Optional timeout in seconds
-
-        Returns:
-                The result from the server
-
-        Raises:
-                WOSAPIError: If the server returns an error
-                TimeoutError: If the operation times out
-
-        """
-        serialized = payload.SerializeToString()
-        result = self._client.request(
-            "@wos/dummy/user", "update_user", serialized, "", timeout
-        )
-
-        # Convert result to expected type
-        if result is not None:
-            return User().parse(result)
         return None
 
     def action_authenticate(
@@ -1063,6 +1063,32 @@ class CoreService:
         """
         self._client.unsubscribe(subscription_key)
 
+    def request_get_heartbeat(self, timeout: float = None) -> WOSHeartbeat:
+        """
+        Get the current heartbeat of the system
+
+        Args:
+                timeout: Optional timeout in seconds
+
+        Returns:
+                The result from the server
+
+        Raises:
+                WOSAPIError: If the server returns an error
+                TimeoutError: If the operation times out
+
+        """
+        serialized = None
+
+        result = self._client.request(
+            "main/core", "get_heartbeat", serialized, "", timeout
+        )
+
+        # Convert result to expected type
+        if result is not None:
+            return WOSHeartbeat().parse(result)
+        return None
+
     def request_get_service_list(self, timeout: float = None) -> WOSServiceList:
         """
         Get the list of services available in the system
@@ -1167,32 +1193,6 @@ class CoreService:
         # Convert result to expected type
         if result is not None:
             return WOSDiagnoseInfo().parse(result)
-        return None
-
-    def request_get_heartbeat(self, timeout: float = None) -> WOSHeartbeat:
-        """
-        Get the current heartbeat of the system
-
-        Args:
-                timeout: Optional timeout in seconds
-
-        Returns:
-                The result from the server
-
-        Raises:
-                WOSAPIError: If the server returns an error
-                TimeoutError: If the operation times out
-
-        """
-        serialized = None
-
-        result = self._client.request(
-            "main/core", "get_heartbeat", serialized, "", timeout
-        )
-
-        # Convert result to expected type
-        if result is not None:
-            return WOSHeartbeat().parse(result)
         return None
 
 
@@ -1521,7 +1521,7 @@ class WOSClient:
         """
         if self.ws is not None:
             return True
-        print(f"Connecting to {self.endpoint}")
+
         try:
             ws_endpoint = f"ws://{self.endpoint}/api/ws"
             self.ws = websocket.create_connection(ws_endpoint, timeout=timeout)

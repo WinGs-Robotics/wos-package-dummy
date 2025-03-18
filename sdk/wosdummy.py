@@ -8,15 +8,6 @@ from typing import List
 import betterproto
 
 
-class UserStatus(betterproto.Enum):
-    """User status"""
-
-    USER_STATUS_UNSPECIFIED = 0
-    USER_STATUS_ACTIVE = 1
-    USER_STATUS_INACTIVE = 2
-    USER_STATUS_BANNED = 3
-
-
 class PostVisibility(betterproto.Enum):
     """Post visibility"""
 
@@ -26,22 +17,37 @@ class PostVisibility(betterproto.Enum):
     POST_VISIBILITY_FRIENDS_ONLY = 3
 
 
+class UserStatus(betterproto.Enum):
+    """User status"""
+
+    USER_STATUS_UNSPECIFIED = 0
+    USER_STATUS_ACTIVE = 1
+    USER_STATUS_INACTIVE = 2
+    USER_STATUS_BANNED = 3
+
+
 @dataclass
-class DeletePostRequest(betterproto.Message):
-    """Delete post request"""
+class UpdatePostRequest(betterproto.Message):
+    """Update post request"""
 
     id: str = betterproto.string_field(1)
-    user_id: str = betterproto.string_field(2)
+    # Fields to update
+    title: str = betterproto.string_field(2)
+    content: str = betterproto.string_field(3)
+    image_urls: List[str] = betterproto.string_field(4)
+    tags: List[str] = betterproto.string_field(5)
+    visibility: "PostVisibility" = betterproto.enum_field(6)
+    clear_images: bool = betterproto.bool_field(7)
+    clear_tags: bool = betterproto.bool_field(8)
 
 
 @dataclass
-class ListPostsRequest(betterproto.Message):
-    """List posts request with pagination"""
+class ListUsersRequest(betterproto.Message):
+    """List users request with pagination"""
 
     page_size: int = betterproto.int32_field(1)
     page_token: str = betterproto.string_field(2)
-    visibility_filter: "PostVisibility" = betterproto.enum_field(3)
-    tag_filters: List[str] = betterproto.string_field(4)
+    status_filter: "UserStatus" = betterproto.enum_field(3)
 
 
 @dataclass
@@ -60,10 +66,50 @@ class User(betterproto.Message):
 
 
 @dataclass
-class GetUserRequest(betterproto.Message):
-    """Get user request"""
+class UpdateUserRequest(betterproto.Message):
+    """Update user request"""
 
     id: str = betterproto.string_field(1)
+    # Fields to update with optional values
+    email: str = betterproto.string_field(2)
+    display_name: str = betterproto.string_field(3)
+    profile_picture_url: str = betterproto.string_field(4)
+    bio: str = betterproto.string_field(5)
+    status: "UserStatus" = betterproto.enum_field(6)
+
+
+@dataclass
+class AuthenticateResponse(betterproto.Message):
+    """Authentication response"""
+
+    user_id: str = betterproto.string_field(1)
+    access_token: str = betterproto.string_field(2)
+    refresh_token: str = betterproto.string_field(3)
+    expires_in: int = betterproto.int64_field(4)
+
+
+@dataclass
+class DeletePostRequest(betterproto.Message):
+    """Delete post request"""
+
+    id: str = betterproto.string_field(1)
+    user_id: str = betterproto.string_field(2)
+
+
+@dataclass
+class AuthenticateRequest(betterproto.Message):
+    """Authentication request"""
+
+    username_or_email: str = betterproto.string_field(1)
+    password: str = betterproto.string_field(2)
+
+
+@dataclass
+class UnlikePostRequest(betterproto.Message):
+    """Unlike post request"""
+
+    post_id: str = betterproto.string_field(1)
+    user_id: str = betterproto.string_field(2)
 
 
 @dataclass
@@ -73,6 +119,77 @@ class ListUsersResponse(betterproto.Message):
     users: List["User"] = betterproto.message_field(1)
     next_page_token: str = betterproto.string_field(2)
     total_count: int = betterproto.int32_field(3)
+
+
+@dataclass
+class Post(betterproto.Message):
+    """Post entity"""
+
+    id: str = betterproto.string_field(1)
+    user_id: str = betterproto.string_field(2)
+    title: str = betterproto.string_field(3)
+    content: str = betterproto.string_field(4)
+    image_urls: List[str] = betterproto.string_field(5)
+    tags: List[str] = betterproto.string_field(6)
+    visibility: "PostVisibility" = betterproto.enum_field(7)
+    like_count: int = betterproto.int32_field(8)
+    comment_count: int = betterproto.int32_field(9)
+    created_at: datetime = betterproto.message_field(10)
+    updated_at: datetime = betterproto.message_field(11)
+
+
+@dataclass
+class Comment(betterproto.Message):
+    """Comment entity"""
+
+    id: str = betterproto.string_field(1)
+    post_id: str = betterproto.string_field(2)
+    user_id: str = betterproto.string_field(3)
+    content: str = betterproto.string_field(4)
+    created_at: datetime = betterproto.message_field(5)
+    updated_at: datetime = betterproto.message_field(6)
+
+
+@dataclass
+class ListPostsRequest(betterproto.Message):
+    """List posts request with pagination"""
+
+    page_size: int = betterproto.int32_field(1)
+    page_token: str = betterproto.string_field(2)
+    visibility_filter: "PostVisibility" = betterproto.enum_field(3)
+    tag_filters: List[str] = betterproto.string_field(4)
+
+
+@dataclass
+class AddCommentRequest(betterproto.Message):
+    """Add comment request"""
+
+    post_id: str = betterproto.string_field(1)
+    user_id: str = betterproto.string_field(2)
+    content: str = betterproto.string_field(3)
+
+
+@dataclass
+class GetUserRequest(betterproto.Message):
+    """Get user request"""
+
+    id: str = betterproto.string_field(1)
+
+
+@dataclass
+class ListCommentsRequest(betterproto.Message):
+    """List comments request"""
+
+    post_id: str = betterproto.string_field(1)
+    page_size: int = betterproto.int32_field(2)
+    page_token: str = betterproto.string_field(3)
+
+
+@dataclass
+class GetPostRequest(betterproto.Message):
+    """Get post request"""
+
+    id: str = betterproto.string_field(1)
 
 
 @dataclass
@@ -106,16 +223,10 @@ class ListPostsResponse(betterproto.Message):
 
 
 @dataclass
-class UpdateUserRequest(betterproto.Message):
-    """Update user request"""
+class DeleteUserRequest(betterproto.Message):
+    """Delete user request"""
 
     id: str = betterproto.string_field(1)
-    # Fields to update with optional values
-    email: str = betterproto.string_field(2)
-    display_name: str = betterproto.string_field(3)
-    profile_picture_url: str = betterproto.string_field(4)
-    bio: str = betterproto.string_field(5)
-    status: "UserStatus" = betterproto.enum_field(6)
 
 
 @dataclass
@@ -129,69 +240,10 @@ class ListUserPostsRequest(betterproto.Message):
 
 
 @dataclass
-class GetPostRequest(betterproto.Message):
-    """Get post request"""
+class LikePostResponse(betterproto.Message):
+    """Like post response"""
 
-    id: str = betterproto.string_field(1)
-
-
-@dataclass
-class UpdatePostRequest(betterproto.Message):
-    """Update post request"""
-
-    id: str = betterproto.string_field(1)
-    # Fields to update
-    title: str = betterproto.string_field(2)
-    content: str = betterproto.string_field(3)
-    image_urls: List[str] = betterproto.string_field(4)
-    tags: List[str] = betterproto.string_field(5)
-    visibility: "PostVisibility" = betterproto.enum_field(6)
-    clear_images: bool = betterproto.bool_field(7)
-    clear_tags: bool = betterproto.bool_field(8)
-
-
-@dataclass
-class UnlikePostRequest(betterproto.Message):
-    """Unlike post request"""
-
-    post_id: str = betterproto.string_field(1)
-    user_id: str = betterproto.string_field(2)
-
-
-@dataclass
-class DeleteUserRequest(betterproto.Message):
-    """Delete user request"""
-
-    id: str = betterproto.string_field(1)
-
-
-@dataclass
-class Comment(betterproto.Message):
-    """Comment entity"""
-
-    id: str = betterproto.string_field(1)
-    post_id: str = betterproto.string_field(2)
-    user_id: str = betterproto.string_field(3)
-    content: str = betterproto.string_field(4)
-    created_at: datetime = betterproto.message_field(5)
-    updated_at: datetime = betterproto.message_field(6)
-
-
-@dataclass
-class Post(betterproto.Message):
-    """Post entity"""
-
-    id: str = betterproto.string_field(1)
-    user_id: str = betterproto.string_field(2)
-    title: str = betterproto.string_field(3)
-    content: str = betterproto.string_field(4)
-    image_urls: List[str] = betterproto.string_field(5)
-    tags: List[str] = betterproto.string_field(6)
-    visibility: "PostVisibility" = betterproto.enum_field(7)
-    like_count: int = betterproto.int32_field(8)
-    comment_count: int = betterproto.int32_field(9)
-    created_at: datetime = betterproto.message_field(10)
-    updated_at: datetime = betterproto.message_field(11)
+    updated_like_count: int = betterproto.int32_field(1)
 
 
 @dataclass
@@ -200,15 +252,6 @@ class LikePostRequest(betterproto.Message):
 
     post_id: str = betterproto.string_field(1)
     user_id: str = betterproto.string_field(2)
-
-
-@dataclass
-class ListUsersRequest(betterproto.Message):
-    """List users request with pagination"""
-
-    page_size: int = betterproto.int32_field(1)
-    page_token: str = betterproto.string_field(2)
-    status_filter: "UserStatus" = betterproto.enum_field(3)
 
 
 @dataclass
@@ -221,46 +264,3 @@ class CreatePostRequest(betterproto.Message):
     image_urls: List[str] = betterproto.string_field(4)
     tags: List[str] = betterproto.string_field(5)
     visibility: "PostVisibility" = betterproto.enum_field(6)
-
-
-@dataclass
-class AddCommentRequest(betterproto.Message):
-    """Add comment request"""
-
-    post_id: str = betterproto.string_field(1)
-    user_id: str = betterproto.string_field(2)
-    content: str = betterproto.string_field(3)
-
-
-@dataclass
-class ListCommentsRequest(betterproto.Message):
-    """List comments request"""
-
-    post_id: str = betterproto.string_field(1)
-    page_size: int = betterproto.int32_field(2)
-    page_token: str = betterproto.string_field(3)
-
-
-@dataclass
-class LikePostResponse(betterproto.Message):
-    """Like post response"""
-
-    updated_like_count: int = betterproto.int32_field(1)
-
-
-@dataclass
-class AuthenticateRequest(betterproto.Message):
-    """Authentication request"""
-
-    username_or_email: str = betterproto.string_field(1)
-    password: str = betterproto.string_field(2)
-
-
-@dataclass
-class AuthenticateResponse(betterproto.Message):
-    """Authentication response"""
-
-    user_id: str = betterproto.string_field(1)
-    access_token: str = betterproto.string_field(2)
-    refresh_token: str = betterproto.string_field(3)
-    expires_in: int = betterproto.int64_field(4)
