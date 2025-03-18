@@ -1,0 +1,85 @@
+syntax = "proto3";
+package wosdummy;
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// User entity
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string display_name = 4;
+  string profile_picture_url = 5;
+  string bio = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  UserStatus status = 9;
+}
+
+// User status
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  USER_STATUS_ACTIVE = 1;
+  USER_STATUS_INACTIVE = 2;
+  USER_STATUS_BANNED = 3;
+}
+
+// Create user request
+message CreateUserRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string display_name = 4;
+  string profile_picture_url = 5;
+  string bio = 6;
+}
+
+// Get user request
+message GetUserRequest {
+  string id = 1;
+}
+
+// Update user request
+message UpdateUserRequest {
+  string id = 1;
+  
+  // Fields to update with optional values
+  optional string email = 2;
+  optional string display_name = 3;
+  optional string profile_picture_url = 4;
+  optional string bio = 5;
+  optional UserStatus status = 6;
+}
+
+// Delete user request
+message DeleteUserRequest {
+  string id = 1;
+}
+
+// List users request with pagination
+message ListUsersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  UserStatus status_filter = 3;
+}
+
+// List users response
+message ListUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Authentication request
+message AuthenticateRequest {
+  string username_or_email = 1;
+  string password = 2;
+}
+
+// Authentication response
+message AuthenticateResponse {
+  string user_id = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+  int64 expires_in = 4;
+}

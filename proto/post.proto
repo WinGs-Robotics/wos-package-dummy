@@ -1,0 +1,133 @@
+syntax = "proto3";
+package wosdummy;
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// Post entity
+message Post {
+  string id = 1;
+  string user_id = 2;
+  string title = 3;
+  string content = 4;
+  repeated string image_urls = 5;
+  repeated string tags = 6;
+  PostVisibility visibility = 7;
+  int32 like_count = 8;
+  int32 comment_count = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+// Post visibility
+enum PostVisibility {
+  POST_VISIBILITY_UNSPECIFIED = 0;
+  POST_VISIBILITY_PUBLIC = 1;
+  POST_VISIBILITY_PRIVATE = 2;
+  POST_VISIBILITY_FRIENDS_ONLY = 3;
+}
+
+// Comment entity
+message Comment {
+  string id = 1;
+  string post_id = 2;
+  string user_id = 3;
+  string content = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// Create post request
+message CreatePostRequest {
+  string user_id = 1;
+  string title = 2;
+  string content = 3;
+  repeated string image_urls = 4;
+  repeated string tags = 5;
+  PostVisibility visibility = 6;
+}
+
+// Get post request
+message GetPostRequest {
+  string id = 1;
+}
+
+// Update post request
+message UpdatePostRequest {
+  string id = 1;
+  
+  // Fields to update
+  optional string title = 2;
+  optional string content = 3;
+  repeated string image_urls = 4;
+  repeated string tags = 5;
+  optional PostVisibility visibility = 6;
+  optional bool clear_images = 7;
+  optional bool clear_tags = 8;
+}
+
+// Delete post request
+message DeletePostRequest {
+  string id = 1;
+  string user_id = 2; // To verify post ownership
+}
+
+// List posts request with pagination
+message ListPostsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  PostVisibility visibility_filter = 3;
+  repeated string tag_filters = 4;
+}
+
+// List user's posts request
+message ListUserPostsRequest {
+  string user_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+  PostVisibility visibility_filter = 4;
+}
+
+// List posts response
+message ListPostsResponse {
+  repeated Post posts = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Like post request
+message LikePostRequest {
+  string post_id = 1;
+  string user_id = 2;
+}
+
+// Like post response
+message LikePostResponse {
+  int32 updated_like_count = 1;
+}
+
+// Unlike post request
+message UnlikePostRequest {
+  string post_id = 1;
+  string user_id = 2;
+}
+
+// Add comment request
+message AddCommentRequest {
+  string post_id = 1;
+  string user_id = 2;
+  string content = 3;
+}
+
+// List comments request
+message ListCommentsRequest {
+  string post_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+// List comments response
+message ListCommentsResponse {
+  repeated Comment comments = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
