@@ -83,3 +83,7 @@ message AuthenticateResponse {
   string refresh_token = 3;
   int64 expires_in = 4;
 }
+
+message UserDeletedEvent {
+  string user_id = 1;
+}
