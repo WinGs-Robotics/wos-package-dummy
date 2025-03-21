@@ -8,6 +8,34 @@ from typing import List
 import betterproto
 
 
+class WOSDataFieldCollection(betterproto.Enum):
+    COLLECTION_SINGLE = 0
+    COLLECTION_LIST = 1
+    COLLECTION_MAP = 2
+
+
+class WOSNodeState(betterproto.Enum):
+    SCHEDULED = 0
+    PENDING = 1
+    STARTED = 2
+    RUNNING = 3
+    COMPLETED = 4
+    FAILED = 5
+    STACKED = 6
+
+
+class WOSNodePolicy(betterproto.Enum):
+    IGNORE = 0
+    RESTART = 1
+    EMERGENCY = 2
+
+
+class WOSIssueSeverity(betterproto.Enum):
+    SEVERITY_INFO = 0
+    SEVERITY_WARNING = 1
+    SEVERITY_ERROR = 2
+
+
 class WOSAPIOperation(betterproto.Enum):
     """Enum representing the possible WOSAPI operations"""
 
@@ -41,26 +69,27 @@ class WOSAPIOperation(betterproto.Enum):
     OP_ACK = 12
 
 
-class WOSDataFieldCollection(betterproto.Enum):
-    COLLECTION_SINGLE = 0
-    COLLECTION_LIST = 1
-    COLLECTION_MAP = 2
+@dataclass
+class WOSSetting(betterproto.Message):
+    package_settings: "WOSPackageSetting" = betterproto.message_field(1)
+    port: str = betterproto.string_field(2)
+    fps: int = betterproto.uint32_field(3)
+    beta: bool = betterproto.bool_field(4)
+    debug: bool = betterproto.bool_field(5)
 
 
-class WOSNodeState(betterproto.Enum):
-    SCHEDULED = 0
-    PENDING = 1
-    STARTED = 2
-    RUNNING = 3
-    COMPLETED = 4
-    FAILED = 5
-    STACKED = 6
-
-
-class WOSNodePolicy(betterproto.Enum):
-    IGNORE = 0
-    RESTART = 1
-    EMERGENCY = 2
+@dataclass
+class WOSStartNodeRequest(betterproto.Message):
+    # If we want to presist the run info, we can provide the id
+    id: str = betterproto.string_field(1)
+    # The node to run in node-entity format node-entity format: <package-
+    # name>/<node-key>
+    name: str = betterproto.string_field(2)
+    # The node input
+    parameters: str = betterproto.string_field(3)
+    instance: str = betterproto.string_field(4)
+    # Used by wos internally
+    extra: str = betterproto.string_field(5)
 
 
 @dataclass
@@ -69,19 +98,99 @@ class WOSNodeInfoList(betterproto.Message):
 
 
 @dataclass
-class WOSDataTypeEnumValue(betterproto.Message):
-    name: str = betterproto.string_field(1)
-    description: str = betterproto.string_field(2)
-    value: int = betterproto.int32_field(3)
+class WOSHeartbeat(betterproto.Message):
+    num_nodes_running: int = betterproto.int32_field(1)
+    num_nodes: int = betterproto.int32_field(2)
+    num_services: int = betterproto.int32_field(3)
+    num_goroutines: int = betterproto.int32_field(4)
+    num_connections: int = betterproto.int32_field(5)
 
 
 @dataclass
-class WOSSetting(betterproto.Message):
-    package_settings: "WOSPackageSetting" = betterproto.message_field(1)
-    port: str = betterproto.string_field(2)
-    fps: int = betterproto.uint32_field(3)
-    beta: bool = betterproto.bool_field(4)
-    debug: bool = betterproto.bool_field(5)
+class WOSAPIFeedback(betterproto.Message):
+    """Use for Op = OP_FEEDBACK"""
+
+    # from zero to one
+    progress: float = betterproto.float_field(1)
+    # a status message provided by service handler
+    status: str = betterproto.string_field(2)
+
+
+@dataclass
+class WOSNodeInfo(betterproto.Message):
+    id: str = betterproto.string_field(1)
+    definition: "WOSNodeDefinition" = betterproto.message_field(2)
+    request: "WOSStartNodeRequest" = betterproto.message_field(3)
+    parameters: str = betterproto.string_field(4)
+    state: "WOSNodeState" = betterproto.enum_field(5)
+    status: str = betterproto.string_field(6)
+    parent: str = betterproto.string_field(7)
+    shared: bool = betterproto.bool_field(8)
+
+
+@dataclass
+class WOSTopicDefinition(betterproto.Message):
+    name: str = betterproto.string_field(1)
+    type: str = betterproto.string_field(2)
+    description: str = betterproto.string_field(3)
+
+
+@dataclass
+class WOSRequestDefinition(betterproto.Message):
+    name: str = betterproto.string_field(1)
+    input: str = betterproto.string_field(2)
+    output: str = betterproto.string_field(3)
+    description: str = betterproto.string_field(4)
+
+
+@dataclass
+class WOSPackageInfo(betterproto.Message):
+    # @scope/pkg-name only use lower char,number, underscore
+    name: str = betterproto.string_field(1)
+    # any string in markdown [Image in markdown are searched from package path]
+    # default to README.md if exists
+    description: str = betterproto.string_field(2)
+    # semver x.x.x # default to 0.0.0
+    version: str = betterproto.string_field(3)
+    # path/to/image
+    icon: str = betterproto.string_field(4)
+    # SPDX syntax https://spdx.dev/use/specifications/
+    license: str = betterproto.string_field(5)
+    # homepage url
+    homepage: str = betterproto.string_field(6)
+    # author name:  "name <email> (url)"
+    author: str = betterproto.string_field(7)
+    # The package definition for available nodes and etc...
+    definition: "WOSPackageDefinition" = betterproto.message_field(8)
+    # The dev override for the package when run with wos dev
+    dev_overwrite: "WOSPackageDefinition" = betterproto.message_field(9)
+    # list of cmd to run for "wos build". This will also run when user install
+    # your package usually use in source-based release, that requires user to
+    # build on their machine should only be used as local docker image builder.
+    # Try not to assume user's environment
+    build_steps: List[str] = betterproto.string_field(10)
+
+
+@dataclass
+class WOSServiceDefinition(betterproto.Message):
+    name: str = betterproto.string_field(1)
+    singleton: bool = betterproto.bool_field(2)
+    topics: "WOSTopicDefinition" = betterproto.message_field(3)
+    requests: "WOSRequestDefinition" = betterproto.message_field(4)
+    actions: "WOSActionDefinition" = betterproto.message_field(5)
+    package: str = betterproto.string_field(6)
+
+
+@dataclass
+class WOSDataTypeEnumDefinition(betterproto.Message):
+    name: str = betterproto.string_field(1)
+    description: str = betterproto.string_field(2)
+    values: List["WOSDataTypeEnumValue"] = betterproto.message_field(3)
+
+
+@dataclass
+class WOSPackageSetting(betterproto.Message):
+    parameters: str = betterproto.string_field(1)
 
 
 @dataclass
@@ -111,6 +220,87 @@ class WOSPackageDefinition(betterproto.Message):
     # entire package in zip, tar.gz, or tar.xz. And it should have a wos.yml file
     # in its root folder)
     dependencies: str = betterproto.string_field(8)
+
+
+@dataclass
+class WOSDiagnoseInfo(betterproto.Message):
+    # The time of the performance info
+    time: datetime = betterproto.message_field(1)
+    # The CPU usage in percent
+    cpu: float = betterproto.double_field(2)
+    # The memory usage in mb
+    memory: float = betterproto.double_field(3)
+    # The total memory in mb
+    total_memory: float = betterproto.double_field(4)
+    # The memory usage in percent
+    num_go_routines: int = betterproto.int32_field(5)
+    # The go routine info
+    go_routine_info: str = betterproto.string_field(6)
+
+
+@dataclass
+class WOSDataTypeDefinition(betterproto.Message):
+    name: str = betterproto.string_field(1)
+    description: str = betterproto.string_field(2)
+    editor: str = betterproto.string_field(3)
+    validator: str = betterproto.string_field(4)
+    fields: List["WOSDataFieldDefinition"] = betterproto.message_field(5)
+
+
+@dataclass
+class WOSIssue(betterproto.Message):
+    # The severity of the issue
+    severity: "WOSIssueSeverity" = betterproto.enum_field(1)
+    # The message of the issue
+    message: str = betterproto.string_field(2)
+    # The resolution of the issue
+    resolution: str = betterproto.string_field(3)
+
+
+@dataclass
+class WOSServiceList(betterproto.Message):
+    services: "WOSServiceInfo" = betterproto.message_field(1)
+
+
+@dataclass
+class WOSPackageRegistration(betterproto.Message):
+    name: str = betterproto.string_field(1)
+    path: str = betterproto.string_field(2)
+    info: "WOSPackageInfo" = betterproto.message_field(3)
+
+
+@dataclass
+class WOSDataFieldDefinition(betterproto.Message):
+    name: str = betterproto.string_field(1)
+    description: str = betterproto.string_field(2)
+    index: int = betterproto.int32_field(3)
+    editor: str = betterproto.string_field(4)
+    validator: str = betterproto.string_field(5)
+    type: str = betterproto.string_field(6)
+    collection: "WOSDataFieldCollection" = betterproto.enum_field(7)
+    default: bytes = betterproto.bytes_field(8)
+
+
+@dataclass
+class WOSActionDefinition(betterproto.Message):
+    name: str = betterproto.string_field(1)
+    input: str = betterproto.string_field(2)
+    output: str = betterproto.string_field(3)
+    singleton: bool = betterproto.bool_field(4)
+    description: str = betterproto.string_field(5)
+
+
+@dataclass
+class WOSServiceInfo(betterproto.Message):
+    resource: str = betterproto.string_field(1)
+    instance: str = betterproto.string_field(2)
+
+
+@dataclass
+class WOSDataTypeEnumValue(betterproto.Message):
+    name: str = betterproto.string_field(1)
+    description: str = betterproto.string_field(2)
+    value: int = betterproto.int32_field(3)
 
 
 @dataclass
@@ -164,7 +354,7 @@ class WOSNodeDefinition(betterproto.Message):
     shared_deps: List[str] = betterproto.string_field(10)
     # Priority of the node This will be used to determine the order of the node
     # to run higher priority will run first
-    priority: int = betterproto.uint32_field(11)
+    priority: int = betterproto.int32_field(11)
     # What will happen when the node is failed IGNORE: ignore the failure
     # RESTART: restart the node EMERGENCY: stop the wos and other running nodes
     # Use Emergency for mission critical nodes
@@ -176,126 +366,9 @@ class WOSNodeDefinition(betterproto.Message):
     # timeout in seconds for the service to be available or the node will be
     # failed default to 15 seconds
     timeout: int = betterproto.int32_field(15)
-
-
-@dataclass
-class WOSAPIFeedback(betterproto.Message):
-    """Use for Op = OP_FEEDBACK"""
-
-    # from zero to one
-    progress: float = betterproto.float_field(1)
-    # a status message provided by service handler
-    status: str = betterproto.string_field(2)
-
-
-@dataclass
-class WOSRequestDefinition(betterproto.Message):
-    name: str = betterproto.string_field(1)
-    input: str = betterproto.string_field(2)
-    output: str = betterproto.string_field(3)
-    description: str = betterproto.string_field(4)
-
-
-@dataclass
-class WOSServiceList(betterproto.Message):
-    services: "WOSServiceInfo" = betterproto.message_field(1)
-
-
-@dataclass
-class WOSDataTypeDefinition(betterproto.Message):
-    name: str = betterproto.string_field(1)
-    description: str = betterproto.string_field(2)
-    editor: str = betterproto.string_field(3)
-    validator: str = betterproto.string_field(4)
-    fields: List["WOSDataFieldDefinition"] = betterproto.message_field(5)
-
-
-@dataclass
-class WOSPackageRegistration(betterproto.Message):
-    name: str = betterproto.string_field(1)
-    path: str = betterproto.string_field(2)
-    info: "WOSPackageInfo" = betterproto.message_field(3)
-
-
-@dataclass
-class WOSHeartbeat(betterproto.Message):
-    num_nodes_running: int = betterproto.int32_field(1)
-    num_nodes: int = betterproto.int32_field(2)
-    num_services: int = betterproto.int32_field(3)
-    num_goroutines: int = betterproto.int32_field(4)
-    num_connections: int = betterproto.int32_field(5)
-
-
-@dataclass
-class WOSPackageInfo(betterproto.Message):
-    # @scope/pkg-name only use lower char,number, underscore
-    name: str = betterproto.string_field(1)
-    # any string in markdown [Image in markdown are searched from package path]
-    # default to README.md if exists
-    description: str = betterproto.string_field(2)
-    # semver x.x.x # default to 0.0.0
-    version: str = betterproto.string_field(3)
-    # path/to/image
-    icon: str = betterproto.string_field(4)
-    # SPDX syntax https://spdx.dev/use/specifications/
-    license: str = betterproto.string_field(5)
-    # homepage url
-    homepage: str = betterproto.string_field(6)
-    # author name:  "name <email> (url)"
-    author: str = betterproto.string_field(7)
-    # The package definition for available nodes and etc...
-    definition: "WOSPackageDefinition" = betterproto.message_field(8)
-    # The dev override for the package when run with wos dev
-    dev_overwrite: "WOSPackageDefinition" = betterproto.message_field(9)
-    # list of cmd to run for "wos build". This will also run when user install
-    # your package usually use in source-based release, that requires user to
-    # build on their machine should only be used as local docker image builder.
-    # Try not to assume user's environment
-    build_steps: List[str] = betterproto.string_field(10)
-
-
-@dataclass
-class WOSStartNodeRequest(betterproto.Message):
-    # If we want to presist the run info, we can provide the id
-    id: str = betterproto.string_field(1)
-    # The node to run in node-entity format node-entity format: <package-
-    # name>/<node-key>
-    name: str = betterproto.string_field(2)
-    # The node input
-    parameters: str = betterproto.string_field(3)
-    instance: str = betterproto.string_field(4)
-    # Used by wos internally
-    extra: str = betterproto.string_field(5)
-
-
-@dataclass
-class WOSTopicDefinition(betterproto.Message):
-    name: str = betterproto.string_field(1)
-    type: str = betterproto.string_field(2)
-    description: str = betterproto.string_field(3)
-
-
-@dataclass
-class WOSDataTypeEnumDefinition(betterproto.Message):
-    name: str = betterproto.string_field(1)
-    description: str = betterproto.string_field(2)
-    values: List["WOSDataTypeEnumValue"] = betterproto.message_field(3)
-
-
-@dataclass
-class WOSDiagnoseInfo(betterproto.Message):
-    # The time of the performance info
-    time: datetime = betterproto.message_field(1)
-    # The CPU usage in percent
-    cpu: float = betterproto.double_field(2)
-    # The memory usage in mb
-    memory: float = betterproto.double_field(3)
-    # The total memory in mb
-    total_memory: float = betterproto.double_field(4)
-    # The memory usage in percent
-    num_go_routines: int = betterproto.int32_field(5)
-    # The go routine info
-    go_routine_info: str = betterproto.string_field(6)
+    # image to be used for the container add this to allow wos to automatically
+    # pull the image for user
+    images: List[str] = betterproto.string_field(16)
 
 
 @dataclass
@@ -322,56 +395,3 @@ class WOSAPIMessage(betterproto.Message):
     instance: str = betterproto.string_field(7)
     # Machine ID for the route (reserved and unused right now)
     machine: str = betterproto.string_field(8)
-
-
-@dataclass
-class WOSServiceDefinition(betterproto.Message):
-    name: str = betterproto.string_field(1)
-    singleton: bool = betterproto.bool_field(2)
-    topics: "WOSTopicDefinition" = betterproto.message_field(3)
-    requests: "WOSRequestDefinition" = betterproto.message_field(4)
-    actions: "WOSActionDefinition" = betterproto.message_field(5)
-    package: str = betterproto.string_field(6)
-
-
-@dataclass
-class WOSNodeInfo(betterproto.Message):
-    id: str = betterproto.string_field(1)
-    definition: "WOSNodeDefinition" = betterproto.message_field(2)
-    request: "WOSStartNodeRequest" = betterproto.message_field(3)
-    parameters: str = betterproto.string_field(4)
-    state: "WOSNodeState" = betterproto.enum_field(5)
-    status: str = betterproto.string_field(6)
-    parent: str = betterproto.string_field(7)
-
-
-@dataclass
-class WOSActionDefinition(betterproto.Message):
-    name: str = betterproto.string_field(1)
-    input: str = betterproto.string_field(2)
-    output: str = betterproto.string_field(3)
-    singleton: bool = betterproto.bool_field(4)
-    description: str = betterproto.string_field(5)
-
-
-@dataclass
-class WOSServiceInfo(betterproto.Message):
-    resource: str = betterproto.string_field(1)
-    instance: str = betterproto.string_field(2)
-
-
-@dataclass
-class WOSDataFieldDefinition(betterproto.Message):
-    name: str = betterproto.string_field(1)
-    description: str = betterproto.string_field(2)
-    index: int = betterproto.int32_field(3)
-    editor: str = betterproto.string_field(4)
-    validator: str = betterproto.string_field(5)
-    type: str = betterproto.string_field(6)
-    collection: "WOSDataFieldCollection" = betterproto.enum_field(7)
-    default: bytes = betterproto.bytes_field(8)
-
-
-@dataclass
-class WOSPackageSetting(betterproto.Message):
-    parameters: str = betterproto.string_field(1)

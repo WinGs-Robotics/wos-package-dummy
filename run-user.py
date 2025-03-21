@@ -1,4 +1,4 @@
-from sdk.wos_sdk import WOSClient
+from sdk import WOSClient
 import time
 
 if __name__ == "__main__":
