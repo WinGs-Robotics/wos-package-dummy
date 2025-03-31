@@ -1,0 +1,205 @@
+{
+  "name": "@wos/dummy",
+  "homepage": "",
+  "icon": "",
+  "license": "",
+  "version": "0.0.1",
+  "author": "weicheng",
+  "description": "WOS Package created by weicheng",
+  "buildSteps": ["docker build . -t wos/dummy"],
+  "definition": {
+    "dependencies": {},
+    "main": [
+      {
+        "name": "@wos/dummy/run_server",
+        "parameters": { "port": "8080", "dev_mode": "false" }
+      }
+    ],
+    "nodes": {
+      "run_user": {
+        "name": "run_user",
+        "url": "python3://run-user.py",
+        "tags": ["user", "service"],
+        "priority": 10,
+        "policy": "RESTART",
+        "service": "@wos/dummy/user",
+        "timeout": 30,
+        "singleton": true
+      },
+      "run_post": {
+        "name": "run_post",
+        "url": "python3://run-post.py",
+        "tags": ["post", "service"],
+        "priority": 10,
+        "policy": "RESTART",
+        "service": "@wos/dummy/post",
+        "timeout": 30,
+        "singleton": true
+      },
+      "run_server": {
+        "name": "run_server",
+        "url": "container://wos/dummy",
+        "args": ["run-server.py"],
+        "env": {},
+        "config": {},
+        "tags": ["server", "api"],
+        "priority": 5,
+        "policy": "EMERGENCY",
+        "timeout": 60,
+        "singleton": false,
+        "deps": {
+          "run_user": { "name": "@wos/dummy/run_user" },
+          "run_post": { "name": "@wos/dummy/run_post" }
+        }
+      }
+    },
+    "parameters": { "port": "8080", "dev_mode": "false" },
+    "proto": ["proto"],
+    "services": {
+      "user": {
+        "name": "user",
+        "singleton": true,
+        "package": "wos.dummy",
+        "topics": {
+          "user_updates": {
+            "name": "user_updates",
+            "type": "wosdummy.User",
+            "description": "Stream of user updates"
+          },
+          "user_deleted": {
+            "name": "user_deleted",
+            "type": "wosdummy.UserDeletedEvent",
+            "description": "Event when a user is deleted"
+          }
+        },
+        "requests": {
+          "get_user": {
+            "name": "get_user",
+            "input": "wosdummy.GetUserRequest",
+            "output": "wosdummy.User",
+            "description": "Get a user by ID"
+          },
+          "list_users": {
+            "name": "list_users",
+            "input": "wosdummy.ListUsersRequest",
+            "output": "wosdummy.ListUsersResponse",
+            "description": "List users with pagination"
+          },
+          "create_user": {
+            "name": "create_user",
+            "input": "wosdummy.CreateUserRequest",
+            "output": "wosdummy.User",
+            "description": "Create a new user"
+          },
+          "update_user": {
+            "name": "update_user",
+            "input": "wosdummy.UpdateUserRequest",
+            "output": "wosdummy.User",
+            "description": "Update a user"
+          }
+        },
+        "actions": {
+          "delete_user": {
+            "name": "delete_user",
+            "input": "wosdummy.DeleteUserRequest",
+            "output": "google.protobuf.Empty",
+            "description": "Delete a user",
+            "singleton": true
+          },
+          "authenticate": {
+            "name": "authenticate",
+            "input": "wosdummy.AuthenticateRequest",
+            "output": "wosdummy.AuthenticateResponse",
+            "description": "Authenticate a user",
+            "singleton": true
+          }
+        }
+      },
+      "post": {
+        "name": "post",
+        "singleton": true,
+        "package": "wos.dummy",
+        "topics": {
+          "post_updates": {
+            "name": "post_updates",
+            "type": "wosdummy.Post",
+            "description": "Stream of post updates"
+          },
+          "comment_updates": {
+            "name": "comment_updates",
+            "type": "wosdummy.Comment",
+            "description": "Stream of comment updates"
+          }
+        },
+        "requests": {
+          "get_post": {
+            "name": "get_post",
+            "input": "wosdummy.GetPostRequest",
+            "output": "wosdummy.Post",
+            "description": "Get a post by ID"
+          },
+          "list_posts": {
+            "name": "list_posts",
+            "input": "wosdummy.ListPostsRequest",
+            "output": "wosdummy.ListPostsResponse",
+            "description": "List posts with pagination"
+          },
+          "list_user_posts": {
+            "name": "list_user_posts",
+            "input": "wosdummy.ListUserPostsRequest",
+            "output": "wosdummy.ListPostsResponse",
+            "description": "List posts by user ID"
+          },
+          "create_post": {
+            "name": "create_post",
+            "input": "wosdummy.CreatePostRequest",
+            "output": "wosdummy.Post",
+            "description": "Create a new post"
+          },
+          "update_post": {
+            "name": "update_post",
+            "input": "wosdummy.UpdatePostRequest",
+            "output": "wosdummy.Post",
+            "description": "Update a post"
+          },
+          "list_comments": {
+            "name": "list_comments",
+            "input": "wosdummy.ListCommentsRequest",
+            "output": "wosdummy.ListCommentsResponse",
+            "description": "List comments for a post"
+          }
+        },
+        "actions": {
+          "delete_post": {
+            "name": "delete_post",
+            "input": "wosdummy.DeletePostRequest",
+            "output": "google.protobuf.Empty",
+            "description": "Delete a post",
+            "singleton": true
+          },
+          "like_post": {
+            "name": "like_post",
+            "input": "wosdummy.LikePostRequest",
+            "output": "wosdummy.LikePostResponse",
+            "description": "Like a post",
+            "singleton": true
+          },
+          "unlike_post": {
+            "name": "unlike_post",
+            "input": "wosdummy.UnlikePostRequest",
+            "output": "google.protobuf.Empty",
+            "description": "Unlike a post",
+            "singleton": true
+          },
+          "add_comment": {
+            "name": "add_comment",
+            "input": "wosdummy.AddCommentRequest",
+            "output": "wosdummy.Comment",
+            "description": "Add a comment to a post",
+            "singleton": true
+          }
+        }
+      }
+    }
+  }
+}
