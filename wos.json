@@ -11,7 +11,7 @@
     "dependencies": {},
     "main": [
       {
-        "name": "@wos/dummy/run_server",
+        "name": "wos/dummy/run_server",
         "parameters": { "port": "8080", "dev_mode": "false" }
       }
     ],
@@ -22,7 +22,7 @@
         "tags": ["user", "service"],
         "priority": 10,
         "policy": "RESTART",
-        "service": "@wos/dummy/user",
+        "service": "wos/dummy/user",
         "timeout": 30,
         "singleton": true
       },
@@ -32,7 +32,7 @@
         "tags": ["post", "service"],
         "priority": 10,
         "policy": "RESTART",
-        "service": "@wos/dummy/post",
+        "service": "wos/dummy/post",
         "timeout": 30,
         "singleton": true
       },
@@ -48,8 +48,8 @@
         "timeout": 60,
         "singleton": false,
         "deps": {
-          "run_user": { "name": "@wos/dummy/run_user" },
-          "run_post": { "name": "@wos/dummy/run_post" }
+          "run_user": { "name": "wos/dummy/run_user" },
+          "run_post": { "name": "wos/dummy/run_post" }
         }
       }
     },
