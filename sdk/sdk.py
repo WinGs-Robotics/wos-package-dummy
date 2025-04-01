@@ -16,172 +16,24 @@ import datetime
 from .conversion import convert_to_bytes, convert_from_bytes
 
 
-class IUserService(ABC):
-    @abstractmethod
-    def req_list_users(self,input: ListUsersRequest)  -> ListUsersResponse:
-        raise NotImplementedError()
-    @abstractmethod
-    def req_create_user(self,input: CreateUserRequest)  -> User:
-        raise NotImplementedError()
-    @abstractmethod
-    def req_update_user(self,input: UpdateUserRequest)  -> User:
-        raise NotImplementedError()
-    @abstractmethod
-    def req_get_user(self,input: GetUserRequest)  -> User:
-        raise NotImplementedError()
-    @abstractmethod
-    def act_delete_user(self,input: DeleteUserRequest,fb: Callable[[WOSAPIFeedback], None])  -> empty_pb2.Empty:
-        raise NotImplementedError()
-    @abstractmethod
-    def cancel_delete_user(self):
-        raise NotImplementedError()
-    @abstractmethod
-    def act_authenticate(self,input: AuthenticateRequest,fb: Callable[[WOSAPIFeedback], None])  -> AuthenticateResponse:
-        raise NotImplementedError()
-    @abstractmethod
-    def cancel_authenticate(self):
-        raise NotImplementedError()
-class UserService:
-    def __init__(self, client: "WOSBaseClient"):
-        self.client = client
-    def pub_user_deleted(self,input: UserDeletedEvent):
-        instance = ''
-        payload = input.SerializeToString()
-        return self.client.publish("wos/dummy/user", "user_deleted", payload, instance)
-
-    def on_user_deleted(self,on_message: Callable[[UserDeletedEvent], None]):
-        instance = ''
-        def cb(msg: WOSAPIMessage):
-            output: UserDeletedEvent = UserDeletedEvent.FromString(msg.payload)
-            on_message(output)
-        return self.client.subscribe("wos/dummy/user", "user_deleted", cb, instance)
-
-    def off_user_deleted(self, sub_key: str):
-        return self.client.unsubscribe(sub_key)
-
-    def pub_user_updates(self,input: User):
-        instance = ''
-        payload = input.SerializeToString()
-        return self.client.publish("wos/dummy/user", "user_updates", payload, instance)
-
-    def on_user_updates(self,on_message: Callable[[User], None]):
-        instance = ''
-        def cb(msg: WOSAPIMessage):
-            output: User = User.FromString(msg.payload)
-            on_message(output)
-        return self.client.subscribe("wos/dummy/user", "user_updates", cb, instance)
-
-    def off_user_updates(self, sub_key: str):
-        return self.client.unsubscribe(sub_key)
-
-    def req_list_users(self,input: ListUsersRequest) :
-        instance = ''
-        payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/user", "list_users", payload, instance)
-        output: ListUsersResponse = ListUsersResponse.FromString(response)
-        return output
-
-    def req_create_user(self,input: CreateUserRequest) :
-        instance = ''
-        payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/user", "create_user", payload, instance)
-        output: User = User.FromString(response)
-        return output
-
-    def req_update_user(self,input: UpdateUserRequest) :
-        instance = ''
-        payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/user", "update_user", payload, instance)
-        output: User = User.FromString(response)
-        return output
-
-    def req_get_user(self,input: GetUserRequest) :
-        instance = ''
-        payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/user", "get_user", payload, instance)
-        output: User = User.FromString(response)
-        return output
-
-    def act_delete_user(self,input: DeleteUserRequest,fb: Callable[[WOSAPIFeedback], None]) :
-        instance = ''
-        payload = input.SerializeToString()
-        response = self.client.action("wos/dummy/user", "delete_user", payload, instance, fb )
-        output: empty_pb2.Empty = convert_from_bytes(response, "google.protobuf.Empty")
-        return output
-
-    def cancel_delete_user(self):
-        return self.client.cancel("wos/dummy/user", "delete_user")
-
-    def act_authenticate(self,input: AuthenticateRequest,fb: Callable[[WOSAPIFeedback], None]) :
-        instance = ''
-        payload = input.SerializeToString()
-        response = self.client.action("wos/dummy/user", "authenticate", payload, instance, fb )
-        output: AuthenticateResponse = AuthenticateResponse.FromString(response)
-        return output
-
-    def cancel_authenticate(self):
-        return self.client.cancel("wos/dummy/user", "authenticate")
-
-    def serve(self, handle: IUserService):
-        instance = ''
-        def wrapper(msg: WOSAPIMessage, fbcb: Callable[[WOSAPIFeedback], None]):
-            if msg.topic == "list_users" and msg.resource == "wos/dummy/user" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_list_users: ListUsersRequest = ListUsersRequest.FromString(msg.payload)
-                response = handle.req_list_users(input_req_list_users)
-                output_req_list_users = response.SerializeToString()
-                return output_req_list_users
-            if msg.topic == "create_user" and msg.resource == "wos/dummy/user" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_create_user: CreateUserRequest = CreateUserRequest.FromString(msg.payload)
-                response = handle.req_create_user(input_req_create_user)
-                output_req_create_user = response.SerializeToString()
-                return output_req_create_user
-            if msg.topic == "update_user" and msg.resource == "wos/dummy/user" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_update_user: UpdateUserRequest = UpdateUserRequest.FromString(msg.payload)
-                response = handle.req_update_user(input_req_update_user)
-                output_req_update_user = response.SerializeToString()
-                return output_req_update_user
-            if msg.topic == "get_user" and msg.resource == "wos/dummy/user" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_get_user: GetUserRequest = GetUserRequest.FromString(msg.payload)
-                response = handle.req_get_user(input_req_get_user)
-                output_req_get_user = response.SerializeToString()
-                return output_req_get_user
-            if msg.topic == "delete_user" and msg.resource == "wos/dummy/user" and msg.op == WOSAPIOperation.OP_ACTION:
-                input_act_delete_user: DeleteUserRequest = DeleteUserRequest.FromString(msg.payload)
-                response = handle.act_delete_user(input_act_delete_user, fbcb)
-                output_act_delete_user = convert_to_bytes(response, "google.protobuf.Empty")
-                return output_act_delete_user
-            if msg.topic == "delete_user" and msg.resource == "wos/dummy/user" and msg.op == WOSAPIOperation.OP_CANCEL:
-                handle.cancel_delete_user()
-                return b''
-            if msg.topic == "authenticate" and msg.resource == "wos/dummy/user" and msg.op == WOSAPIOperation.OP_ACTION:
-                input_act_authenticate: AuthenticateRequest = AuthenticateRequest.FromString(msg.payload)
-                response = handle.act_authenticate(input_act_authenticate, fbcb)
-                output_act_authenticate = response.SerializeToString()
-                return output_act_authenticate
-            if msg.topic == "authenticate" and msg.resource == "wos/dummy/user" and msg.op == WOSAPIOperation.OP_CANCEL:
-                handle.cancel_authenticate()
-                return b''
-            raise ModuleNotFoundError(f"no handler for topic {msg.topic}")
-        return self.client.serve("wos/dummy/user", wrapper, instance) # type: ignore
-
 class IPostService(ABC):
-    @abstractmethod
-    def req_create_post(self,input: CreatePostRequest)  -> Post:
-        raise NotImplementedError()
-    @abstractmethod
-    def req_update_post(self,input: UpdatePostRequest)  -> Post:
-        raise NotImplementedError()
-    @abstractmethod
-    def req_list_comments(self,input: ListCommentsRequest)  -> ListCommentsResponse:
-        raise NotImplementedError()
-    @abstractmethod
-    def req_get_post(self,input: GetPostRequest)  -> Post:
-        raise NotImplementedError()
     @abstractmethod
     def req_list_posts(self,input: ListPostsRequest)  -> ListPostsResponse:
         raise NotImplementedError()
     @abstractmethod
     def req_list_user_posts(self,input: ListUserPostsRequest)  -> ListPostsResponse:
+        raise NotImplementedError()
+    @abstractmethod
+    def req_update_post(self,input: UpdatePostRequest)  -> Post:
+        raise NotImplementedError()
+    @abstractmethod
+    def req_create_post(self,input: CreatePostRequest)  -> Post:
+        raise NotImplementedError()
+    @abstractmethod
+    def req_get_post(self,input: GetPostRequest)  -> Post:
+        raise NotImplementedError()
+    @abstractmethod
+    def req_list_comments(self,input: ListCommentsRequest)  -> ListCommentsResponse:
         raise NotImplementedError()
     @abstractmethod
     def act_like_post(self,input: LikePostRequest,fb: Callable[[WOSAPIFeedback], None])  -> LikePostResponse:
@@ -210,228 +62,376 @@ class IPostService(ABC):
 class PostService:
     def __init__(self, client: "WOSBaseClient"):
         self.client = client
-    def pub_post_updates(self,input: Post):
-        instance = ''
-        payload = input.SerializeToString()
-        return self.client.publish("wos/dummy/post", "post_updates", payload, instance)
-
-    def on_post_updates(self,on_message: Callable[[Post], None]):
-        instance = ''
-        def cb(msg: WOSAPIMessage):
-            output: Post = Post.FromString(msg.payload)
-            on_message(output)
-        return self.client.subscribe("wos/dummy/post", "post_updates", cb, instance)
-
-    def off_post_updates(self, sub_key: str):
-        return self.client.unsubscribe(sub_key)
-
     def pub_comment_updates(self,input: Comment):
         instance = ''
         payload = input.SerializeToString()
-        return self.client.publish("wos/dummy/post", "comment_updates", payload, instance)
+        return self.client.publish("wingsrobotics/dummy/post", "comment_updates", payload, instance)
 
     def on_comment_updates(self,on_message: Callable[[Comment], None]):
         instance = ''
         def cb(msg: WOSAPIMessage):
             output: Comment = Comment.FromString(msg.payload)
             on_message(output)
-        return self.client.subscribe("wos/dummy/post", "comment_updates", cb, instance)
+        return self.client.subscribe("wingsrobotics/dummy/post", "comment_updates", cb, instance)
 
     def off_comment_updates(self, sub_key: str):
         return self.client.unsubscribe(sub_key)
 
-    def req_create_post(self,input: CreatePostRequest) :
+    def pub_post_updates(self,input: Post):
         instance = ''
         payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/post", "create_post", payload, instance)
-        output: Post = Post.FromString(response)
-        return output
+        return self.client.publish("wingsrobotics/dummy/post", "post_updates", payload, instance)
 
-    def req_update_post(self,input: UpdatePostRequest) :
+    def on_post_updates(self,on_message: Callable[[Post], None]):
         instance = ''
-        payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/post", "update_post", payload, instance)
-        output: Post = Post.FromString(response)
-        return output
+        def cb(msg: WOSAPIMessage):
+            output: Post = Post.FromString(msg.payload)
+            on_message(output)
+        return self.client.subscribe("wingsrobotics/dummy/post", "post_updates", cb, instance)
 
-    def req_list_comments(self,input: ListCommentsRequest) :
-        instance = ''
-        payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/post", "list_comments", payload, instance)
-        output: ListCommentsResponse = ListCommentsResponse.FromString(response)
-        return output
-
-    def req_get_post(self,input: GetPostRequest) :
-        instance = ''
-        payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/post", "get_post", payload, instance)
-        output: Post = Post.FromString(response)
-        return output
+    def off_post_updates(self, sub_key: str):
+        return self.client.unsubscribe(sub_key)
 
     def req_list_posts(self,input: ListPostsRequest) :
         instance = ''
         payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/post", "list_posts", payload, instance)
+        response = self.client.request("wingsrobotics/dummy/post", "list_posts", payload, instance)
         output: ListPostsResponse = ListPostsResponse.FromString(response)
         return output
 
     def req_list_user_posts(self,input: ListUserPostsRequest) :
         instance = ''
         payload = input.SerializeToString()
-        response = self.client.request("wos/dummy/post", "list_user_posts", payload, instance)
+        response = self.client.request("wingsrobotics/dummy/post", "list_user_posts", payload, instance)
         output: ListPostsResponse = ListPostsResponse.FromString(response)
+        return output
+
+    def req_update_post(self,input: UpdatePostRequest) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.request("wingsrobotics/dummy/post", "update_post", payload, instance)
+        output: Post = Post.FromString(response)
+        return output
+
+    def req_create_post(self,input: CreatePostRequest) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.request("wingsrobotics/dummy/post", "create_post", payload, instance)
+        output: Post = Post.FromString(response)
+        return output
+
+    def req_get_post(self,input: GetPostRequest) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.request("wingsrobotics/dummy/post", "get_post", payload, instance)
+        output: Post = Post.FromString(response)
+        return output
+
+    def req_list_comments(self,input: ListCommentsRequest) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.request("wingsrobotics/dummy/post", "list_comments", payload, instance)
+        output: ListCommentsResponse = ListCommentsResponse.FromString(response)
         return output
 
     def act_like_post(self,input: LikePostRequest,fb: Callable[[WOSAPIFeedback], None]) :
         instance = ''
         payload = input.SerializeToString()
-        response = self.client.action("wos/dummy/post", "like_post", payload, instance, fb )
+        response = self.client.action("wingsrobotics/dummy/post", "like_post", payload, instance, fb )
         output: LikePostResponse = LikePostResponse.FromString(response)
         return output
 
     def cancel_like_post(self):
-        return self.client.cancel("wos/dummy/post", "like_post")
+        return self.client.cancel("wingsrobotics/dummy/post", "like_post")
 
     def act_unlike_post(self,input: UnlikePostRequest,fb: Callable[[WOSAPIFeedback], None]) :
         instance = ''
         payload = input.SerializeToString()
-        response = self.client.action("wos/dummy/post", "unlike_post", payload, instance, fb )
+        response = self.client.action("wingsrobotics/dummy/post", "unlike_post", payload, instance, fb )
         output: empty_pb2.Empty = convert_from_bytes(response, "google.protobuf.Empty")
         return output
 
     def cancel_unlike_post(self):
-        return self.client.cancel("wos/dummy/post", "unlike_post")
+        return self.client.cancel("wingsrobotics/dummy/post", "unlike_post")
 
     def act_add_comment(self,input: AddCommentRequest,fb: Callable[[WOSAPIFeedback], None]) :
         instance = ''
         payload = input.SerializeToString()
-        response = self.client.action("wos/dummy/post", "add_comment", payload, instance, fb )
+        response = self.client.action("wingsrobotics/dummy/post", "add_comment", payload, instance, fb )
         output: Comment = Comment.FromString(response)
         return output
 
     def cancel_add_comment(self):
-        return self.client.cancel("wos/dummy/post", "add_comment")
+        return self.client.cancel("wingsrobotics/dummy/post", "add_comment")
 
     def act_delete_post(self,input: DeletePostRequest,fb: Callable[[WOSAPIFeedback], None]) :
         instance = ''
         payload = input.SerializeToString()
-        response = self.client.action("wos/dummy/post", "delete_post", payload, instance, fb )
+        response = self.client.action("wingsrobotics/dummy/post", "delete_post", payload, instance, fb )
         output: empty_pb2.Empty = convert_from_bytes(response, "google.protobuf.Empty")
         return output
 
     def cancel_delete_post(self):
-        return self.client.cancel("wos/dummy/post", "delete_post")
+        return self.client.cancel("wingsrobotics/dummy/post", "delete_post")
 
     def serve(self, handle: IPostService):
         instance = ''
         def wrapper(msg: WOSAPIMessage, fbcb: Callable[[WOSAPIFeedback], None]):
-            if msg.topic == "create_post" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_create_post: CreatePostRequest = CreatePostRequest.FromString(msg.payload)
-                response = handle.req_create_post(input_req_create_post)
-                output_req_create_post = response.SerializeToString()
-                return output_req_create_post
-            if msg.topic == "update_post" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_update_post: UpdatePostRequest = UpdatePostRequest.FromString(msg.payload)
-                response = handle.req_update_post(input_req_update_post)
-                output_req_update_post = response.SerializeToString()
-                return output_req_update_post
-            if msg.topic == "list_comments" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_list_comments: ListCommentsRequest = ListCommentsRequest.FromString(msg.payload)
-                response = handle.req_list_comments(input_req_list_comments)
-                output_req_list_comments = response.SerializeToString()
-                return output_req_list_comments
-            if msg.topic == "get_post" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_get_post: GetPostRequest = GetPostRequest.FromString(msg.payload)
-                response = handle.req_get_post(input_req_get_post)
-                output_req_get_post = response.SerializeToString()
-                return output_req_get_post
-            if msg.topic == "list_posts" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
+            if msg.topic == "list_posts" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
                 input_req_list_posts: ListPostsRequest = ListPostsRequest.FromString(msg.payload)
                 response = handle.req_list_posts(input_req_list_posts)
                 output_req_list_posts = response.SerializeToString()
                 return output_req_list_posts
-            if msg.topic == "list_user_posts" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
+            if msg.topic == "list_user_posts" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
                 input_req_list_user_posts: ListUserPostsRequest = ListUserPostsRequest.FromString(msg.payload)
                 response = handle.req_list_user_posts(input_req_list_user_posts)
                 output_req_list_user_posts = response.SerializeToString()
                 return output_req_list_user_posts
-            if msg.topic == "like_post" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_ACTION:
+            if msg.topic == "update_post" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_update_post: UpdatePostRequest = UpdatePostRequest.FromString(msg.payload)
+                response = handle.req_update_post(input_req_update_post)
+                output_req_update_post = response.SerializeToString()
+                return output_req_update_post
+            if msg.topic == "create_post" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_create_post: CreatePostRequest = CreatePostRequest.FromString(msg.payload)
+                response = handle.req_create_post(input_req_create_post)
+                output_req_create_post = response.SerializeToString()
+                return output_req_create_post
+            if msg.topic == "get_post" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_get_post: GetPostRequest = GetPostRequest.FromString(msg.payload)
+                response = handle.req_get_post(input_req_get_post)
+                output_req_get_post = response.SerializeToString()
+                return output_req_get_post
+            if msg.topic == "list_comments" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_list_comments: ListCommentsRequest = ListCommentsRequest.FromString(msg.payload)
+                response = handle.req_list_comments(input_req_list_comments)
+                output_req_list_comments = response.SerializeToString()
+                return output_req_list_comments
+            if msg.topic == "like_post" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_ACTION:
                 input_act_like_post: LikePostRequest = LikePostRequest.FromString(msg.payload)
                 response = handle.act_like_post(input_act_like_post, fbcb)
                 output_act_like_post = response.SerializeToString()
                 return output_act_like_post
-            if msg.topic == "like_post" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_CANCEL:
+            if msg.topic == "like_post" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_CANCEL:
                 handle.cancel_like_post()
                 return b''
-            if msg.topic == "unlike_post" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_ACTION:
+            if msg.topic == "unlike_post" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_ACTION:
                 input_act_unlike_post: UnlikePostRequest = UnlikePostRequest.FromString(msg.payload)
                 response = handle.act_unlike_post(input_act_unlike_post, fbcb)
                 output_act_unlike_post = convert_to_bytes(response, "google.protobuf.Empty")
                 return output_act_unlike_post
-            if msg.topic == "unlike_post" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_CANCEL:
+            if msg.topic == "unlike_post" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_CANCEL:
                 handle.cancel_unlike_post()
                 return b''
-            if msg.topic == "add_comment" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_ACTION:
+            if msg.topic == "add_comment" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_ACTION:
                 input_act_add_comment: AddCommentRequest = AddCommentRequest.FromString(msg.payload)
                 response = handle.act_add_comment(input_act_add_comment, fbcb)
                 output_act_add_comment = response.SerializeToString()
                 return output_act_add_comment
-            if msg.topic == "add_comment" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_CANCEL:
+            if msg.topic == "add_comment" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_CANCEL:
                 handle.cancel_add_comment()
                 return b''
-            if msg.topic == "delete_post" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_ACTION:
+            if msg.topic == "delete_post" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_ACTION:
                 input_act_delete_post: DeletePostRequest = DeletePostRequest.FromString(msg.payload)
                 response = handle.act_delete_post(input_act_delete_post, fbcb)
                 output_act_delete_post = convert_to_bytes(response, "google.protobuf.Empty")
                 return output_act_delete_post
-            if msg.topic == "delete_post" and msg.resource == "wos/dummy/post" and msg.op == WOSAPIOperation.OP_CANCEL:
+            if msg.topic == "delete_post" and msg.resource == "wingsrobotics/dummy/post" and msg.op == WOSAPIOperation.OP_CANCEL:
                 handle.cancel_delete_post()
                 return b''
             raise ModuleNotFoundError(f"no handler for topic {msg.topic}")
-        return self.client.serve("wos/dummy/post", wrapper, instance) # type: ignore
+        return self.client.serve("wingsrobotics/dummy/post", wrapper, instance) # type: ignore
 
-class WosDummyModule:
+class IUserService(ABC):
+    @abstractmethod
+    def req_list_users(self,input: ListUsersRequest)  -> ListUsersResponse:
+        raise NotImplementedError()
+    @abstractmethod
+    def req_update_user(self,input: UpdateUserRequest)  -> User:
+        raise NotImplementedError()
+    @abstractmethod
+    def req_create_user(self,input: CreateUserRequest)  -> User:
+        raise NotImplementedError()
+    @abstractmethod
+    def req_get_user(self,input: GetUserRequest)  -> User:
+        raise NotImplementedError()
+    @abstractmethod
+    def act_authenticate(self,input: AuthenticateRequest,fb: Callable[[WOSAPIFeedback], None])  -> AuthenticateResponse:
+        raise NotImplementedError()
+    @abstractmethod
+    def cancel_authenticate(self):
+        raise NotImplementedError()
+    @abstractmethod
+    def act_delete_user(self,input: DeleteUserRequest,fb: Callable[[WOSAPIFeedback], None])  -> empty_pb2.Empty:
+        raise NotImplementedError()
+    @abstractmethod
+    def cancel_delete_user(self):
+        raise NotImplementedError()
+class UserService:
     def __init__(self, client: "WOSBaseClient"):
         self.client = client
-        self.user = UserService(self.client)
+    def pub_user_deleted(self,input: UserDeletedEvent):
+        instance = ''
+        payload = input.SerializeToString()
+        return self.client.publish("wingsrobotics/dummy/user", "user_deleted", payload, instance)
+
+    def on_user_deleted(self,on_message: Callable[[UserDeletedEvent], None]):
+        instance = ''
+        def cb(msg: WOSAPIMessage):
+            output: UserDeletedEvent = UserDeletedEvent.FromString(msg.payload)
+            on_message(output)
+        return self.client.subscribe("wingsrobotics/dummy/user", "user_deleted", cb, instance)
+
+    def off_user_deleted(self, sub_key: str):
+        return self.client.unsubscribe(sub_key)
+
+    def pub_user_updates(self,input: User):
+        instance = ''
+        payload = input.SerializeToString()
+        return self.client.publish("wingsrobotics/dummy/user", "user_updates", payload, instance)
+
+    def on_user_updates(self,on_message: Callable[[User], None]):
+        instance = ''
+        def cb(msg: WOSAPIMessage):
+            output: User = User.FromString(msg.payload)
+            on_message(output)
+        return self.client.subscribe("wingsrobotics/dummy/user", "user_updates", cb, instance)
+
+    def off_user_updates(self, sub_key: str):
+        return self.client.unsubscribe(sub_key)
+
+    def req_list_users(self,input: ListUsersRequest) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.request("wingsrobotics/dummy/user", "list_users", payload, instance)
+        output: ListUsersResponse = ListUsersResponse.FromString(response)
+        return output
+
+    def req_update_user(self,input: UpdateUserRequest) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.request("wingsrobotics/dummy/user", "update_user", payload, instance)
+        output: User = User.FromString(response)
+        return output
+
+    def req_create_user(self,input: CreateUserRequest) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.request("wingsrobotics/dummy/user", "create_user", payload, instance)
+        output: User = User.FromString(response)
+        return output
+
+    def req_get_user(self,input: GetUserRequest) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.request("wingsrobotics/dummy/user", "get_user", payload, instance)
+        output: User = User.FromString(response)
+        return output
+
+    def act_authenticate(self,input: AuthenticateRequest,fb: Callable[[WOSAPIFeedback], None]) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.action("wingsrobotics/dummy/user", "authenticate", payload, instance, fb )
+        output: AuthenticateResponse = AuthenticateResponse.FromString(response)
+        return output
+
+    def cancel_authenticate(self):
+        return self.client.cancel("wingsrobotics/dummy/user", "authenticate")
+
+    def act_delete_user(self,input: DeleteUserRequest,fb: Callable[[WOSAPIFeedback], None]) :
+        instance = ''
+        payload = input.SerializeToString()
+        response = self.client.action("wingsrobotics/dummy/user", "delete_user", payload, instance, fb )
+        output: empty_pb2.Empty = convert_from_bytes(response, "google.protobuf.Empty")
+        return output
+
+    def cancel_delete_user(self):
+        return self.client.cancel("wingsrobotics/dummy/user", "delete_user")
+
+    def serve(self, handle: IUserService):
+        instance = ''
+        def wrapper(msg: WOSAPIMessage, fbcb: Callable[[WOSAPIFeedback], None]):
+            if msg.topic == "list_users" and msg.resource == "wingsrobotics/dummy/user" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_list_users: ListUsersRequest = ListUsersRequest.FromString(msg.payload)
+                response = handle.req_list_users(input_req_list_users)
+                output_req_list_users = response.SerializeToString()
+                return output_req_list_users
+            if msg.topic == "update_user" and msg.resource == "wingsrobotics/dummy/user" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_update_user: UpdateUserRequest = UpdateUserRequest.FromString(msg.payload)
+                response = handle.req_update_user(input_req_update_user)
+                output_req_update_user = response.SerializeToString()
+                return output_req_update_user
+            if msg.topic == "create_user" and msg.resource == "wingsrobotics/dummy/user" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_create_user: CreateUserRequest = CreateUserRequest.FromString(msg.payload)
+                response = handle.req_create_user(input_req_create_user)
+                output_req_create_user = response.SerializeToString()
+                return output_req_create_user
+            if msg.topic == "get_user" and msg.resource == "wingsrobotics/dummy/user" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_get_user: GetUserRequest = GetUserRequest.FromString(msg.payload)
+                response = handle.req_get_user(input_req_get_user)
+                output_req_get_user = response.SerializeToString()
+                return output_req_get_user
+            if msg.topic == "authenticate" and msg.resource == "wingsrobotics/dummy/user" and msg.op == WOSAPIOperation.OP_ACTION:
+                input_act_authenticate: AuthenticateRequest = AuthenticateRequest.FromString(msg.payload)
+                response = handle.act_authenticate(input_act_authenticate, fbcb)
+                output_act_authenticate = response.SerializeToString()
+                return output_act_authenticate
+            if msg.topic == "authenticate" and msg.resource == "wingsrobotics/dummy/user" and msg.op == WOSAPIOperation.OP_CANCEL:
+                handle.cancel_authenticate()
+                return b''
+            if msg.topic == "delete_user" and msg.resource == "wingsrobotics/dummy/user" and msg.op == WOSAPIOperation.OP_ACTION:
+                input_act_delete_user: DeleteUserRequest = DeleteUserRequest.FromString(msg.payload)
+                response = handle.act_delete_user(input_act_delete_user, fbcb)
+                output_act_delete_user = convert_to_bytes(response, "google.protobuf.Empty")
+                return output_act_delete_user
+            if msg.topic == "delete_user" and msg.resource == "wingsrobotics/dummy/user" and msg.op == WOSAPIOperation.OP_CANCEL:
+                handle.cancel_delete_user()
+                return b''
+            raise ModuleNotFoundError(f"no handler for topic {msg.topic}")
+        return self.client.serve("wingsrobotics/dummy/user", wrapper, instance) # type: ignore
+
+class WingsroboticsDummyModule:
+    def __init__(self, client: "WOSBaseClient"):
+        self.client = client
         self.post = PostService(self.client)
-    def launch_run_user(self, id: str, instance: str, params: Dict[str,str]):
-        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wos/dummy/run_user')
-        payload = request.SerializeToString()
-        res = self.client.request('main/node', 'launch_node', payload)
-        output: WOSNodeInfo = WOSNodeInfo.FromString(res)
-        return output
-
-    def run_run_user(self, id: str, instance: str, params: Dict[str,str]):
-        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wos/dummy/run_user')
-        payload = request.SerializeToString()
-        res = self.client.action('main/node', 'run_node', payload)
-        output: WOSNodeInfo = WOSNodeInfo.FromString(res)
-        return output
-
+        self.user = UserService(self.client)
     def launch_run_post(self, id: str, instance: str, params: Dict[str,str]):
-        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wos/dummy/run_post')
+        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wingsrobotics/dummy/run_post')
         payload = request.SerializeToString()
         res = self.client.request('main/node', 'launch_node', payload)
         output: WOSNodeInfo = WOSNodeInfo.FromString(res)
         return output
 
     def run_run_post(self, id: str, instance: str, params: Dict[str,str]):
-        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wos/dummy/run_post')
+        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wingsrobotics/dummy/run_post')
         payload = request.SerializeToString()
         res = self.client.action('main/node', 'run_node', payload)
         output: WOSNodeInfo = WOSNodeInfo.FromString(res)
         return output
 
     def launch_run_server(self, id: str, instance: str, params: Dict[str,str]):
-        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wos/dummy/run_server')
+        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wingsrobotics/dummy/run_server')
         payload = request.SerializeToString()
         res = self.client.request('main/node', 'launch_node', payload)
         output: WOSNodeInfo = WOSNodeInfo.FromString(res)
         return output
 
     def run_run_server(self, id: str, instance: str, params: Dict[str,str]):
-        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wos/dummy/run_server')
+        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wingsrobotics/dummy/run_server')
+        payload = request.SerializeToString()
+        res = self.client.action('main/node', 'run_node', payload)
+        output: WOSNodeInfo = WOSNodeInfo.FromString(res)
+        return output
+
+    def launch_run_user(self, id: str, instance: str, params: Dict[str,str]):
+        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wingsrobotics/dummy/run_user')
+        payload = request.SerializeToString()
+        res = self.client.request('main/node', 'launch_node', payload)
+        output: WOSNodeInfo = WOSNodeInfo.FromString(res)
+        return output
+
+    def run_run_user(self, id: str, instance: str, params: Dict[str,str]):
+        request = WOSStartNodeRequest(id=id, instance=instance, parameters=params, name='wingsrobotics/dummy/run_user')
         payload = request.SerializeToString()
         res = self.client.action('main/node', 'run_node', payload)
         output: WOSNodeInfo = WOSNodeInfo.FromString(res)
@@ -443,22 +443,10 @@ class ICoreService(ABC):
     def req_wait_service_available(self,input: WOSWaitServiceAvailable) :
         raise NotImplementedError()
     @abstractmethod
-    def req_set_emergency_state(self,input: str) :
-        raise NotImplementedError()
-    @abstractmethod
-    def req_get_diagnose_info(self)  -> WOSDiagnoseInfo:
-        raise NotImplementedError()
-    @abstractmethod
-    def req_get_go_routine_info(self)  -> str:
-        raise NotImplementedError()
-    @abstractmethod
     def req_get_emergency_state(self)  -> str:
         raise NotImplementedError()
     @abstractmethod
-    def req_reload(self) :
-        raise NotImplementedError()
-    @abstractmethod
-    def req_list_service_instance(self,input: str)  -> WOSServiceList:
+    def req_set_emergency_state(self,input: str) :
         raise NotImplementedError()
     @abstractmethod
     def req_get_heartbeat(self)  -> WOSHeartbeat:
@@ -469,22 +457,21 @@ class ICoreService(ABC):
     @abstractmethod
     def req_get_wos_description(self)  -> WOSDescription:
         raise NotImplementedError()
+    @abstractmethod
+    def req_get_diagnose_info(self)  -> WOSDiagnoseInfo:
+        raise NotImplementedError()
+    @abstractmethod
+    def req_reload(self) :
+        raise NotImplementedError()
+    @abstractmethod
+    def req_get_go_routine_info(self)  -> str:
+        raise NotImplementedError()
+    @abstractmethod
+    def req_list_service_instance(self,input: str)  -> WOSServiceList:
+        raise NotImplementedError()
 class CoreService:
     def __init__(self, client: "WOSBaseClient"):
         self.client = client
-    def pub_system_reset(self):
-        instance = ''
-        return self.client.publish("main/core", "system_reset", b"", instance)
-
-    def on_system_reset(self,on_message: Callable):
-        instance = ''
-        def cb(msg: WOSAPIMessage):
-            on_message()
-        return self.client.subscribe("main/core", "system_reset", cb, instance)
-
-    def off_system_reset(self, sub_key: str):
-        return self.client.unsubscribe(sub_key)
-
     def pub_heartbeat(self,input: WOSHeartbeat):
         instance = ''
         payload = input.SerializeToString()
@@ -530,29 +517,24 @@ class CoreService:
     def off_emergency_stop(self, sub_key: str):
         return self.client.unsubscribe(sub_key)
 
+    def pub_system_reset(self):
+        instance = ''
+        return self.client.publish("main/core", "system_reset", b"", instance)
+
+    def on_system_reset(self,on_message: Callable):
+        instance = ''
+        def cb(msg: WOSAPIMessage):
+            on_message()
+        return self.client.subscribe("main/core", "system_reset", cb, instance)
+
+    def off_system_reset(self, sub_key: str):
+        return self.client.unsubscribe(sub_key)
+
     def req_wait_service_available(self,input: WOSWaitServiceAvailable) :
         instance = ''
         payload = input.SerializeToString()
         response = self.client.request("main/core", "wait_service_available", payload, instance)
         return None
-
-    def req_set_emergency_state(self,input: str) :
-        instance = ''
-        payload = convert_to_bytes(input, "google.protobuf.StringValue")
-        response = self.client.request("main/core", "set_emergency_state", payload, instance)
-        return None
-
-    def req_get_diagnose_info(self) :
-        instance = ''
-        response = self.client.request("main/core", "get_diagnose_info", b"", instance)
-        output: WOSDiagnoseInfo = WOSDiagnoseInfo.FromString(response)
-        return output
-
-    def req_get_go_routine_info(self) :
-        instance = ''
-        response = self.client.request("main/core", "get_go_routine_info", b"", instance)
-        output: str = convert_from_bytes(response, "google.protobuf.StringValue")
-        return output
 
     def req_get_emergency_state(self) :
         instance = ''
@@ -560,17 +542,11 @@ class CoreService:
         output: str = convert_from_bytes(response, "google.protobuf.StringValue")
         return output
 
-    def req_reload(self) :
-        instance = ''
-        response = self.client.request("main/core", "reload", b"", instance)
-        return None
-
-    def req_list_service_instance(self,input: str) :
+    def req_set_emergency_state(self,input: str) :
         instance = ''
         payload = convert_to_bytes(input, "google.protobuf.StringValue")
-        response = self.client.request("main/core", "list_service_instance", payload, instance)
-        output: WOSServiceList = WOSServiceList.FromString(response)
-        return output
+        response = self.client.request("main/core", "set_emergency_state", payload, instance)
+        return None
 
     def req_get_heartbeat(self) :
         instance = ''
@@ -590,6 +566,30 @@ class CoreService:
         output: WOSDescription = WOSDescription.FromString(response)
         return output
 
+    def req_get_diagnose_info(self) :
+        instance = ''
+        response = self.client.request("main/core", "get_diagnose_info", b"", instance)
+        output: WOSDiagnoseInfo = WOSDiagnoseInfo.FromString(response)
+        return output
+
+    def req_reload(self) :
+        instance = ''
+        response = self.client.request("main/core", "reload", b"", instance)
+        return None
+
+    def req_get_go_routine_info(self) :
+        instance = ''
+        response = self.client.request("main/core", "get_go_routine_info", b"", instance)
+        output: str = convert_from_bytes(response, "google.protobuf.StringValue")
+        return output
+
+    def req_list_service_instance(self,input: str) :
+        instance = ''
+        payload = convert_to_bytes(input, "google.protobuf.StringValue")
+        response = self.client.request("main/core", "list_service_instance", payload, instance)
+        output: WOSServiceList = WOSServiceList.FromString(response)
+        return output
+
     def serve(self, handle: ICoreService):
         instance = ''
         def wrapper(msg: WOSAPIMessage, fbcb: Callable[[WOSAPIFeedback], None]):
@@ -597,30 +597,14 @@ class CoreService:
                 input_req_wait_service_available: WOSWaitServiceAvailable = WOSWaitServiceAvailable.FromString(msg.payload)
                 response = handle.req_wait_service_available(input_req_wait_service_available)
                 return b''
-            if msg.topic == "set_emergency_state" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_set_emergency_state: str = convert_from_bytes(msg.payload, "google.protobuf.StringValue")
-                response = handle.req_set_emergency_state(input_req_set_emergency_state)
-                return b''
-            if msg.topic == "get_diagnose_info" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
-                response = handle.req_get_diagnose_info()
-                output_req_get_diagnose_info = response.SerializeToString()
-                return output_req_get_diagnose_info
-            if msg.topic == "get_go_routine_info" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
-                response = handle.req_get_go_routine_info()
-                output_req_get_go_routine_info = convert_to_bytes(response, "google.protobuf.StringValue")
-                return output_req_get_go_routine_info
             if msg.topic == "get_emergency_state" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
                 response = handle.req_get_emergency_state()
                 output_req_get_emergency_state = convert_to_bytes(response, "google.protobuf.StringValue")
                 return output_req_get_emergency_state
-            if msg.topic == "reload" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
-                response = handle.req_reload()
+            if msg.topic == "set_emergency_state" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_set_emergency_state: str = convert_from_bytes(msg.payload, "google.protobuf.StringValue")
+                response = handle.req_set_emergency_state(input_req_set_emergency_state)
                 return b''
-            if msg.topic == "list_service_instance" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
-                input_req_list_service_instance: str = convert_from_bytes(msg.payload, "google.protobuf.StringValue")
-                response = handle.req_list_service_instance(input_req_list_service_instance)
-                output_req_list_service_instance = response.SerializeToString()
-                return output_req_list_service_instance
             if msg.topic == "get_heartbeat" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
                 response = handle.req_get_heartbeat()
                 output_req_get_heartbeat = response.SerializeToString()
@@ -633,18 +617,34 @@ class CoreService:
                 response = handle.req_get_wos_description()
                 output_req_get_wos_description = response.SerializeToString()
                 return output_req_get_wos_description
+            if msg.topic == "get_diagnose_info" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
+                response = handle.req_get_diagnose_info()
+                output_req_get_diagnose_info = response.SerializeToString()
+                return output_req_get_diagnose_info
+            if msg.topic == "reload" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
+                response = handle.req_reload()
+                return b''
+            if msg.topic == "get_go_routine_info" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
+                response = handle.req_get_go_routine_info()
+                output_req_get_go_routine_info = convert_to_bytes(response, "google.protobuf.StringValue")
+                return output_req_get_go_routine_info
+            if msg.topic == "list_service_instance" and msg.resource == "main/core" and msg.op == WOSAPIOperation.OP_REQUEST:
+                input_req_list_service_instance: str = convert_from_bytes(msg.payload, "google.protobuf.StringValue")
+                response = handle.req_list_service_instance(input_req_list_service_instance)
+                output_req_list_service_instance = response.SerializeToString()
+                return output_req_list_service_instance
             raise ModuleNotFoundError(f"no handler for topic {msg.topic}")
         return self.client.serve("main/core", wrapper, instance) # type: ignore
 
 class INodeService(ABC):
     @abstractmethod
+    def req_list_node(self)  -> WOSNodeInfoList:
+        raise NotImplementedError()
+    @abstractmethod
     def req_launch_node(self,input: WOSStartNodeRequest)  -> WOSNodeInfo:
         raise NotImplementedError()
     @abstractmethod
     def req_stop_node(self,input: str) :
-        raise NotImplementedError()
-    @abstractmethod
-    def req_list_node(self)  -> WOSNodeInfoList:
         raise NotImplementedError()
 class NodeService:
     def __init__(self, client: "WOSBaseClient"):
@@ -664,6 +664,12 @@ class NodeService:
     def off_node_state_update(self, sub_key: str):
         return self.client.unsubscribe(sub_key)
 
+    def req_list_node(self) :
+        instance = ''
+        response = self.client.request("main/node", "list_node", b"", instance)
+        output: WOSNodeInfoList = WOSNodeInfoList.FromString(response)
+        return output
+
     def req_launch_node(self,input: WOSStartNodeRequest) :
         instance = ''
         payload = input.SerializeToString()
@@ -677,15 +683,13 @@ class NodeService:
         response = self.client.request("main/node", "stop_node", payload, instance)
         return None
 
-    def req_list_node(self) :
-        instance = ''
-        response = self.client.request("main/node", "list_node", b"", instance)
-        output: WOSNodeInfoList = WOSNodeInfoList.FromString(response)
-        return output
-
     def serve(self, handle: INodeService):
         instance = ''
         def wrapper(msg: WOSAPIMessage, fbcb: Callable[[WOSAPIFeedback], None]):
+            if msg.topic == "list_node" and msg.resource == "main/node" and msg.op == WOSAPIOperation.OP_REQUEST:
+                response = handle.req_list_node()
+                output_req_list_node = response.SerializeToString()
+                return output_req_list_node
             if msg.topic == "launch_node" and msg.resource == "main/node" and msg.op == WOSAPIOperation.OP_REQUEST:
                 input_req_launch_node: WOSStartNodeRequest = WOSStartNodeRequest.FromString(msg.payload)
                 response = handle.req_launch_node(input_req_launch_node)
@@ -695,10 +699,6 @@ class NodeService:
                 input_req_stop_node: str = convert_from_bytes(msg.payload, "google.protobuf.StringValue")
                 response = handle.req_stop_node(input_req_stop_node)
                 return b''
-            if msg.topic == "list_node" and msg.resource == "main/node" and msg.op == WOSAPIOperation.OP_REQUEST:
-                response = handle.req_list_node()
-                output_req_list_node = response.SerializeToString()
-                return output_req_list_node
             raise ModuleNotFoundError(f"no handler for topic {msg.topic}")
         return self.client.serve("main/node", wrapper, instance) # type: ignore
 
@@ -710,5 +710,5 @@ class MainModule:
 class WOSSDK(WOSBaseClient):
     def __init__(self, endpoint: str = ""):
         super().__init__(endpoint)
-        self.wos_dummy = WosDummyModule(self)
+        self.wingsrobotics_dummy = WingsroboticsDummyModule(self)
         self.main = MainModule(self)

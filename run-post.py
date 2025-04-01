@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
         return "Service result".encode(), None
 
-    client.serve("wos/dummy/post", service_handle)
+    client.serve("wingsrobotics/dummy/post", service_handle)
     while True:
         print("post is running...")
         time.sleep(5)
