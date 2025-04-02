@@ -21,12 +21,13 @@
     "nodes": {
       "run_post": {
         "name": "run_post",
-        "url": "python3://run-post.py",
+        "url": "container://wingsrobotics/dummy_runner",
         "tags": ["post", "service"],
         "priority": 10,
         "policy": "RESTART",
         "service": "wingsrobotics/dummy/post",
-        "timeout": 30
+        "timeout": 30,
+        "args": ["run-post.py"]
       },
       "run_server": {
         "name": "run_server",
@@ -47,12 +48,13 @@
       },
       "run_user": {
         "name": "run_user",
-        "url": "python3://run-user.py",
+        "url": "container://wingsrobotics/dummy_runner",
         "tags": ["user", "service"],
         "priority": 10,
         "policy": "RESTART",
         "service": "wingsrobotics/dummy/user",
-        "timeout": 30
+        "timeout": 30,
+        "args": ["run-user.py"]
       }
     },
     "services": {
